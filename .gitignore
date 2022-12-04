@@ -36,6 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+.DS_Store/
+!**.DS_Store/**
+
 .postgres/*
 postgres/
 database_volume/
