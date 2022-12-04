@@ -1,0 +1,11 @@
+rootProject.name = 'payment'
+include ':businessdomain:customers'
+include ':businessdomain:products'
+include ':businessdomain:transactions'
+
+include ':Infraestructuradomain:admin'
+include ':Infraestructuradomain:apigateway'
+include ':Infraestructuradomain:config-server'
+include ':Infraestructuradomain:eureka'
+include ':Infraestructuradomain:keycloack'
+

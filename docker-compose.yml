@@ -1,0 +1,274 @@
+version: '3.9'
+services:
+  #Docker Compose creates a virtual network between the services and the DNS name
+  #used for each service is its name: that’s why it’s possible to use eureka-discovery as the hostname.
+  registry-discovery:
+    container_name: ms-eureka
+    image: payment/microservice-docker-eureka:0.0.1-SNAPSHOT
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -DSERVER_PORT=8761
+    ports:
+      - 8761:8761
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #configuration service
+  ##########################################################################
+  configuration:
+    container_name: ms-config
+    image: payment/microservice-docker-config-server:0.0.1-SNAPSHOT
+    volumes:
+      #this it use because we are using a local github repository /host/path:/container/path use ./ for relative path
+      - ${CONFIG_REPOSITORY}:/tmp/config-server-repo
+      #All projets will have a variable value  DEUREKA_SERVER this tell where find a registry-discovery server
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DCONFIG_REPOSITORY_BRANCH=${CONFIG_REPOSITORY_BRANCH}
+        -DCONFIG_ACTIVE_PROFILE=${CONFIG_ACTIVE_PROFILE}
+        -DCONFIG_REPOSITORY=/tmp/config-server-repo
+        -DSECURITY_USERNAME=${SECURITY_USERNAME}
+        -DSECURITY_PASSWORD=${SECURITY_PASSWORD}
+        -DSERVER_PORT=8888
+      #-Dspring.cloud.config.server.native.searchLocations=/var/config-data
+    depends_on:
+      - registry-discovery
+    #ports:
+    #  - 8888:8888
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #administration service
+  ##########################################################################
+  administration:
+    container_name: ms-admin
+    image: payment/microservice-docker-admin:0.0.1-SNAPSHOT
+    #All projets will have a variable value  DEUREKA_SERVER this tell where find a registry-discovery server
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DSERVER_PORT=8762
+    depends_on:
+      - registry-discovery
+    ports:  #port is not placed when randomly assigned from the properties file of ms
+      - 8762:8762
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #apigateway service
+  ##########################################################################
+  apigateway:
+    container_name: apigateway
+    image: payment/microservice-docker-apigateway:0.0.1-SNAPSHOT
+    #All projets will have a variable value  DEUREKA_SERVER this tell where find a registry-discovery server
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DSERVER_PORT=8080
+    depends_on:
+      - registry-discovery
+    ports:
+      - 8080:8080
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #keycloack service
+  ##########################################################################
+  keycloack:
+    container_name: keycloack-adapter
+    image: payment/microservice-docker-keycloack:0.0.1-SNAPSHOT
+    #All projets will have a variable value  DEUREKA_SERVER this tell where find a registry-discovery server
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DKEYCLOACK_SERVER=${KEYCLOACK_SERVER}
+        -DKEYCLOACK_REAL_ID=${KEYCLOACK_REAL_ID}
+        -DKEYCLOACK_CLIENT_ID=${KEYCLOACK_CLIENT_ID}
+        -DKEYCLOACK_CLIENT_SECRET=${KEYCLOACK_CLIENT_SECRET}
+        -DKEYCLOACK_SCOPE=${KEYCLOACK_SCOPE}
+        -DKEYCLOACK_AUTH_GRANT_TYPE=${KEYCLOACK_AUTH_GRANT_TYPE}
+        -DSERVER_PORT=8088
+    depends_on:
+      - registry-discovery
+    #ports:
+    #  - 8088:8088
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #product service
+  ##########################################################################
+  products:
+    container_name: ms-products
+    image: payment/microservice-docker-products:0.0.1-SNAPSHOT
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -Dspring.profiles.active=${CONFIG_PROFILE}
+        -DCONFIG_SERVER_IMPORT=${CONFIG_SERVER_IMPORT}
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DCONFIG_PROFILE=${CONFIG_PROFILE}
+        -DCONFIG_USERNAME=${CONFIG_USERNAME}
+        -DCONFIG_PASSWORD=${CONFIG_PASSWORD}
+        -DCONFIG_REPOSITORY_BRANCH=${CONFIG_REPOSITORY_BRANCH}
+        -DSERVER_PORT=0
+    depends_on:
+      - registry-discovery
+      - configuration
+    #ports:  port is not placed when randomly assigned from the properties file of ms
+    #  - 8083:8083
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #customer service
+  ##########################################################################
+  customers:
+    container_name: ms-customers
+    image: payment/microservice-docker-customers:0.0.1-SNAPSHOT
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -Dspring.profiles.active=${CONFIG_PROFILE}
+        -DCONFIG_SERVER_IMPORT=${CONFIG_SERVER_IMPORT}
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DCONFIG_PROFILE=${CONFIG_PROFILE}
+        -DCONFIG_USERNAME=${CONFIG_USERNAME}
+        -DCONFIG_PASSWORD=${CONFIG_PASSWORD}
+        -DCONFIG_REPOSITORY_BRANCH=${CONFIG_REPOSITORY_BRANCH}
+        -DSERVER_PORT=0
+    depends_on:
+      - registry-discovery
+      - configuration
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
+    networks:
+      - payment-network
+    #ports:  port is not placed when randomly assigned from the properties file of ms
+      # - 8081:8081
+
+  ##########################################################################
+  #transaction service
+  ##########################################################################
+  transactions:
+    container_name: ms-transactions
+    image: payment/microservice-docker-transactions:0.0.1-SNAPSHOT
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -Dspring.profiles.active=${CONFIG_PROFILE}
+        -DCONFIG_SERVER_IMPORT=${CONFIG_SERVER_IMPORT}
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DCONFIG_PROFILE=${CONFIG_PROFILE}
+        -DCONFIG_USERNAME=${CONFIG_USERNAME}
+        -DCONFIG_PASSWORD=${CONFIG_PASSWORD}
+        -DCONFIG_REPOSITORY_BRANCH=${CONFIG_REPOSITORY_BRANCH}
+        -DSERVER_PORT=0
+    depends_on:
+      - registry-discovery
+      - configuration
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 60s
+    #ports:  port is not placed when randomly assigned from the properties file of ms
+    #  - 8082:8082
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #database service
+  ##########################################################################
+  postgres_db:
+    container_name: postgres
+    image: postgres:14.3
+    #ports:
+    #  - 5432:5432
+    volumes:
+      #allow *.sql, *.sql.gz, or *.sh and is execute only if data directory is empty
+      - ./init/db:/docker-entrypoint-initdb.d
+      - ./database_volume:/var/lib/postgresql/data
+    environment:
+      #default postgres super user
+      POSTGRES_USER: postgres
+      #default passwor for postgres super user, it is only the required envvar for postgres image
+      POSTGRES_PASSWORD: qwerty
+      #main database if name is not specific thname of super user is use
+      POSTGRES_DB: postgresdb
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #pgadmin service
+  ##########################################################################
+  pgadmin4:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "qwerty"
+    ports:
+      - 80:80
+    depends_on:
+      - postgres_db
+    networks:
+      - payment-network
+
+  ##########################################################################
+  #keycloack Server
+  ##########################################################################
+  keycloack-server:
+    container_name: keycloackServer
+    image: quay.io/keycloak/keycloak:20.0.1
+    restart: always
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: ${KC_DB_VENDOR}
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+    command:
+      - start-dev
+    depends_on:
+      - postgres_db
+    #ports:
+    #  - 8090:8080
+    networks:
+      - payment-network
+
+networks:
+  payment-network:
+    name: payment-network
+    driver: bridge

@@ -1,0 +1,30 @@
+## YAML Template for develoment, rename bootstrap file
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: ${CUSTOMERS_CONTEXTPATH:/}
+
+eureka:
+  client:
+    enabled: false
+management: 
+  endpoints:
+    web:
+      exposure:
+        include: "*"  
+  endpoint:
+    health:
+      show-details: ALWAYS
+spring:
+  datasource:
+    driver-class-name:
+  application:
+    name: businessdomain-transactions
+
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger
+
+user.role: developer

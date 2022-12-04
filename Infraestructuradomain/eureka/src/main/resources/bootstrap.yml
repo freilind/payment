@@ -1,0 +1,23 @@
+server:
+  port: ${SERVER_PORT:8761}
+  servlet:
+    context-path: ${EUREKA_CONTEXTPATH:/}
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  renewalPercentThreshold: 0.85
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: ALWAYS
+

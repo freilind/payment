@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8088}
+  servlet:
+    context-path: ${KEYCLOAK_ADAPTER_CONTEXTPATH:/}
+
+spring:
+  application:
+    name: keycloack
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
+
+keycloak:
+  base-uri: ${KEYCLOACK_SERVER:http://localhost:8090/realms/}
+  path: Payment/protocol/openid-connect
+  authorization-uri: ${keycloak.base-uri}${keycloak.path}/auth
+  user-info-uri: ${keycloak.base-uri}${keycloak.path}/userinfo
+  token-uri: ${keycloak.base-uri}${keycloak.path}/token
+  logout: ${keycloak.base-uri}${keycloak.path}/logout
+  jwk-set-uri: ${keycloak.base-uri}${keycloak.path}/certs
+  certs-id: ${KEYCLOACK_REAL_ID:nHhGiuv6t2RINT2f0MUyA6hyDfnFu7RlYb1UI_91xmU}
+  client-id: ${KEYCLOACK_CLIENT_ID:front-angular-billing-app}
+  client-secret: ${KEYCLOACK_CLIENT_SECRET:qwerty}
+  scope: ${KEYCLOACK_SCOPE:profile}
+  authorization-grant-type: ${KEYCLOACK_AUTH_GRANT_TYPE:password}
+  authorization-grant-type-refresh: refresh_token
+
+logging:
+  level:
+    root: INFO

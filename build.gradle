@@ -1,0 +1,90 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.5'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id "com.palantir.docker" version "0.22.1"
+}
+
+ext {
+    set('springCloudVersion', "2021.0.5")
+}
+
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.palantir.docker'
+
+    group = 'com.payment'
+    version = '0.0.1-SNAPSHOT'
+    sourceCompatibility = '11'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation 'org.springframework.cloud:spring-cloud-starter'
+        implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+}
+
+task initBuildJars {
+    dependsOn 'initBuildBusiness'
+    dependsOn 'initBuildInfrastructure'
+}
+
+task initBuildBusiness {
+    dependsOn(':businessdomain:customers:build').mustRunAfter(':businessdomain:customers:clean')
+    dependsOn(':businessdomain:products:build').mustRunAfter(':businessdomain:products:clean')
+    dependsOn(':businessdomain:transactions:build').mustRunAfter(':businessdomain:transactions:clean')
+}
+
+task initBuildInfrastructure {
+    dependsOn(':Infraestructuradomain:admin:build').mustRunAfter(':Infraestructuradomain:admin:clean')
+    dependsOn(':Infraestructuradomain:apigateway:build').mustRunAfter(':Infraestructuradomain:apigateway:clean')
+    dependsOn(':Infraestructuradomain:config-server:build').mustRunAfter(':Infraestructuradomain:config-server:clean')
+    dependsOn(':Infraestructuradomain:eureka:build').mustRunAfter(':Infraestructuradomain:eureka:clean')
+    dependsOn(':Infraestructuradomain:keycloack:build').mustRunAfter(':Infraestructuradomain:keycloack:clean')
+}
+
+task buildImageDocker {
+    dependsOn('buildImageDockerBusiness').mustRunAfter(initBuildBusiness)
+    dependsOn('buildImageDockerInfrastructure')
+}
+
+task buildImageDockerBusiness {
+    dependsOn(':businessdomain:customers:docker')
+    dependsOn(':businessdomain:products:docker')
+    dependsOn(':businessdomain:transactions:docker')
+}
+
+task buildImageDockerInfrastructure {
+    dependsOn(':Infraestructuradomain:admin:docker')
+    dependsOn(':Infraestructuradomain:apigateway:docker')
+    dependsOn(':Infraestructuradomain:config-server:docker')
+    dependsOn(':Infraestructuradomain:eureka:docker')
+    dependsOn(':Infraestructuradomain:keycloack:docker')
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+

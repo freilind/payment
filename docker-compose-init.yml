@@ -1,0 +1,58 @@
+# docker-compose -f docker-compose-init.yml up
+version: '3.9'
+services:
+  #Docker Compose creates a virtual network between the services and the DNS name
+  #used for each service is its name: that’s why it’s possible to use eureka-discovery as the hostname.
+  postgres_db:
+    container_name: postgres
+    image: postgres:14.3
+    ports:
+      - 5432:5432
+    volumes:
+      #allow *.sql, *.sql.gz, or *.sh and is execute only if data directory is empty
+      - ./init/db:/docker-entrypoint-initdb.d/
+      - ./database_volume:/var/lib/postgresql/data
+    environment:
+      #default postgres super user
+      POSTGRES_USER: postgres
+      #default passwor for postgres super user, it is only the required envvar for postgres image
+      POSTGRES_PASSWORD: qwerty
+    networks:
+      - payment-network
+  pgadmin4:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "qwerty"
+    ports:
+      - 80:80
+    depends_on:
+      - postgres_db
+    networks:
+      - payment-network
+  keycloack-server:
+    container_name: keycloackServer
+    image: quay.io/keycloak/keycloak:20.0.1
+    restart: always
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: ${KC_DB_VENDOR}
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+    command:
+      - start-dev
+    depends_on:
+      - postgres_db
+    ports:
+      - 8090:8080
+    networks:
+      - payment-network
+
+networks:
+  payment-network:
+    name: payment-network
+    driver: bridge

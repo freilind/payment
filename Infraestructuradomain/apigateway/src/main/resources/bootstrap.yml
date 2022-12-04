@@ -1,0 +1,45 @@
+## YAML Template.
+---
+server:
+    port: ${SERVER_PORT:8080}
+    servlet:
+      context-path: ${APIGATEWAY_CONTEXTPATH:/}
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+
+spring:
+  application:
+    name: apigateway  
+  cloud:
+    gateway:
+      routes:
+      - id: keycloack_service
+        uri: lb://keycloack
+        predicates:
+          - Path=/keycloack/**
+      - id: customers_service
+        uri: lb://businessdomain-customers
+        predicates:
+        - Path=/customers/**
+        filters:
+          - name: AuthenticationFiltering
+      - id: products_service
+        uri: lb://businessdomain-products
+        predicates:
+        - Path=/products/**
+        filters:
+          - name: AuthenticationFiltering
+      - id: transactions_service
+        uri: lb://businessdomain-transactions
+        predicates:
+        - Path=/transactions/**
+        filters:
+          - name: AuthenticationFiltering
+            
+            

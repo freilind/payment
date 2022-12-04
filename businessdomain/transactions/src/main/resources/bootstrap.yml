@@ -1,0 +1,55 @@
+## YAML Template.
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: ${TRANSACTIONS_CONTEXTPATH:/}
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
+spring:
+  datasource:
+    driver-class-name:
+  application:
+    name: businessdomain-transactions
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        serviceId: config-server
+      failFast: true
+      #name of base properties config file, before profile
+      name: config-client
+      profile: ${CONFIG_PROFILE:development}
+      #label: latest
+      label: ${CONFIG_REPOSITORY_BRANCH:master}
+      username: ${CONFIG_USERNAME}
+      password: ${CONFIG_PASSWORD}
+      retry:
+        max-attempts: 5
+        initial-interval: 10000
+        max-interval: 20000
+management: 
+  endpoints:
+    web:
+      exposure:
+        include: "*"  
+  endpoint:
+    health:
+      show-details: ALWAYS
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger.html
+
+opentracing:
+  jaeger:
+    udp-sender:
+      host: localhost
+      port: 6831
+    const-sampler:
+      decision: true
+    enabled: true
+    log-spans: true
+    service-name: transactions

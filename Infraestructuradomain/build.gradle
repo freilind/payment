@@ -1,0 +1,19 @@
+subprojects {
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
+
+    docker {
+        name "payment/microservice-docker-${project.name}:${project.version}"
+        files "build/libs/${project.name}-${project.version}.jar"
+        buildArgs([NAMEJAR: "${project.name}-${project.version}"])
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
+
+

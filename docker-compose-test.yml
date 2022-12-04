@@ -1,0 +1,85 @@
+# docker-compose -f docker-compose-test.yml up
+version: '3.9'
+services:
+  #Docker Compose creates a virtual network between the services and the DNS name
+  #used for each service is its name: that’s why it’s possible to use eureka-discovery as the hostname.
+  postgres_db:
+    container_name: postgres
+    image: postgres:14.3
+    ports:
+      - 5432:5432
+    volumes:
+      #allow *.sql, *.sql.gz, or *.sh and is execute only if data directory is empty
+      - ./init/db:/docker-entrypoint-initdb.d/
+      - ./database_volume:/var/lib/postgresql/data
+    environment:
+      #default postgres super user
+      POSTGRES_USER: postgres
+      #default passwor for postgres super user, it is only the required envvar for postgres image
+      POSTGRES_PASSWORD: qwerty
+    networks:
+      - payment-network
+  ##########################################################################
+  #customer service
+  ##########################################################################
+  customers:
+    container_name: ms-customers
+    image: payment/microservice-docker-customers:0.0.1-SNAPSHOT
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -Dspring.profiles.active=${CONFIG_PROFILE}
+        -DCONFIG_SERVER_IMPORT=${CONFIG_SERVER_IMPORT}
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DCONFIG_PROFILE=${CONFIG_PROFILE}
+        -DCONFIG_USERNAME=${CONFIG_USERNAME}
+        -DCONFIG_PASSWORD=${CONFIG_PASSWORD}
+        -DCONFIG_REPOSITORY_BRANCH=${CONFIG_REPOSITORY_BRANCH}
+        -DSERVER_PORT=8081
+    depends_on:
+      - postgres_db
+      - configuration
+    networks:
+      - payment-network
+    #port is not placed when randomly assigned from the properties file of ms
+    ports:
+      - 8081:8081
+  registry-discovery:
+    container_name: ms-eureka
+    image: payment/microservice-docker-eureka:0.0.1-SNAPSHOT
+    ports:
+      - 8761:8761
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+    networks:
+      - payment-network
+  configuration:
+    container_name: ms-config
+    image: payment/microservice-docker-config-server:0.0.1-SNAPSHOT
+    volumes:
+      #this it use because we are using a local github repository /host/path:/container/path use ./ for relative path
+      - ${CONFIG_REPOSITORY}:/tmp/config-server-repo
+      #All projets will have a variable value  DEUREKA_SERVER this tell where find a registry-discovery server
+    environment:
+      - JAVA_OPTS=
+        -Xms256M
+        -Xmx256M
+        -DEUREKA_SERVER=${EUREKA_SERVER}
+        -DCONFIG_REPOSITORY_BRANCH=${CONFIG_REPOSITORY_BRANCH}
+        -DCONFIG_ACTIVE_PROFILE=${CONFIG_ACTIVE_PROFILE}
+        -DCONFIG_REPOSITORY=/tmp/config-server-repo
+        -DSECURITY_USERNAME=${SECURITY_USERNAME}
+        -DSECURITY_PASSWORD=${SECURITY_PASSWORD}
+      #-Dspring.cloud.config.server.native.searchLocations=/tmp/config-server-repo
+    ports:
+      - 8888:8888
+    networks:
+      - payment-network
+
+networks:
+  payment-network:
+    name: payment-network
+    driver: bridge
